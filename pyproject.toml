@@ -20,4 +20,5 @@ classifiers = [
 "Bug Tracker" = "https://github.com/NMontanaBrown/CheXbert/issues"
 
 [tool.setuptools]
-packages = ["chexbert"]
+package-dir = {"" = "src"}
+packages = ["your_package_name"]
