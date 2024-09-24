@@ -21,4 +21,4 @@ classifiers = [
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-packages = ["your_package_name"]
+packages = ["chexbert"]
