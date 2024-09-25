@@ -109,27 +109,40 @@ def label(checkpoint_path:str,
     y_pred = [t.tolist() for t in y_pred]
     return y_pred
 
-def save_preds(y_pred, csv_path, out_path):
+def postprocess_preds(y_pred):
+    """
+    Post-process predictions prior to save, or other
+    manipulations.
+    @param y_pred (List[List[int]]): list of predictions for each report.
+    @returns y_pred (np.array): post-processed predictions.
+    """
+    y_pred = np.array(y_pred)
+    y_pred = y_pred.T # N_reports, 14
+    df = pd.DataFrame(y_pred, columns=CONDITIONS)
+    df.replace(0, np.nan, inplace=True) #blank class is NaN
+    df.replace(3, -1, inplace=True)     #uncertain class is -1
+    df.replace(2, 0, inplace=True)      #negative class is 0
+    return df
+
+def save_preds(y_pred, csv_path:Union[str, pd.DataFrame], out_path:str, column:str="Report Impression"):
     """Save predictions as out_path/labeled_reports.csv 
     @param y_pred (List[List[int]]): list of predictions for each report
     @param csv_path (string): path to csv containing reports
     @param out_path (string): path to output directory
     """
-    y_pred = np.array(y_pred)
-    y_pred = y_pred.T
-    
-    df = pd.DataFrame(y_pred, columns=CONDITIONS)
-    reports = pd.read_csv(csv_path)['Report Impression']
+    df_pred = postprocess_preds(y_pred)
+    if isinstance(csv_path, str) and os.path.isfile(csv_path):
+        reports = pd.read_csv(csv_path)
+    else:
+        reports = csv_path
+    assert column in reports.columns, f"Column {column} not found in the dataframe"
+    reports = reports[column]
 
-    df['Report Impression'] = reports.tolist()
+    df_pred[column] = reports.tolist()
     new_cols = ['Report Impression'] + CONDITIONS
-    df = df[new_cols]
+    df_pred = df_pred[new_cols]
 
-    df.replace(0, np.nan, inplace=True) #blank class is NaN
-    df.replace(3, -1, inplace=True)     #uncertain class is -1
-    df.replace(2, 0, inplace=True)      #negative class is 0 
-    
-    df.to_csv(os.path.join(out_path, 'labeled_reports.csv'), index=False)
+    df_pred.to_csv(os.path.join(out_path, 'labeled_reports.csv'), index=False)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Label a csv file containing radiology reports')
