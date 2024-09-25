@@ -109,7 +109,7 @@ def label(checkpoint_path:str,
     y_pred = [t.tolist() for t in y_pred]
     return y_pred
 
-def postprocess_preds(y_pred):
+def postprocess_preds(y_pred, uncertain_is_negative=True):
     """
     Post-process predictions prior to save, or other
     manipulations.
@@ -120,7 +120,10 @@ def postprocess_preds(y_pred):
     y_pred = y_pred.T # N_reports, 14
     df = pd.DataFrame(y_pred, columns=CONDITIONS)
     df.replace(0, np.nan, inplace=True) #blank class is NaN
-    df.replace(3, -1, inplace=True)     #uncertain class is -1
+    if uncertain_is_negative:
+        df.replace(3, 0, inplace=True) # treat uncertains as negatives
+    else:
+        df.replace(3, -1, inplace=True)     #uncertain class is -1
     df.replace(2, 0, inplace=True)      #negative class is 0
     return df
 
