@@ -1,12 +1,18 @@
+import os
+from typing import Union
 import pandas as pd
 from transformers import BertTokenizer, AutoTokenizer
 import json
 from tqdm import tqdm
 import argparse
 
-def get_impressions_from_csv(path):	
-        df = pd.read_csv(path)
-        imp = df['Report Impression']
+def get_impressions_from_csv(path:Union[str, pd.DataFrame], impression_column:str="Report Impression") -> pd.Series:
+        if isinstance(path, str) and os.path.isfile(path):
+                df = pd.read_csv(path)
+        else:
+                df = path
+        assert impression_column in df.columns, f"Column {impression_column} not found in the dataframe"
+        imp = df[impression_column]
         imp = imp.str.strip()
         imp = imp.replace('\n',' ', regex=True)
         imp = imp.replace('\s+', ' ', regex=True)

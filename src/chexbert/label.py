@@ -1,16 +1,17 @@
 import os
+from typing import Union
 import argparse
 import torch
 import torch.nn as nn
 import pandas as pd
 import numpy as np
-import utils
-from models.bert_labeler import bert_labeler
-from bert_tokenizer import tokenize
+import chexbert.utils as utils
+from chexbert.models.bert_labeler import bert_labeler
+from chexbert.bert_tokenizer import tokenize
 from transformers import BertTokenizer
 from collections import OrderedDict
-from datasets.unlabeled_dataset import UnlabeledDataset
-from constants import *
+from chexbert.datasets.unlabeled_dataset import UnlabeledDataset
+from chexbert.constants import *
 from tqdm import tqdm
 
 def collate_fn_no_labels(sample_list):
@@ -33,8 +34,8 @@ def collate_fn_no_labels(sample_list):
     batch = {'imp': batched_imp, 'len': len_list}
     return batch
 
-def load_unlabeled_data(csv_path, batch_size=BATCH_SIZE, num_workers=NUM_WORKERS,
-                        shuffle=False):
+def load_unlabeled_data(csv_path:Union[str, pd.DataFrame], batch_size=BATCH_SIZE, num_workers=NUM_WORKERS,
+                        shuffle=False, column="Report Impression"):
     """ Create UnlabeledDataset object for the input reports
     @param csv_path (string): path to csv file containing reports
     @param batch_size (int): the batch size. As per the BERT repository, the max batch size
@@ -46,19 +47,22 @@ def load_unlabeled_data(csv_path, batch_size=BATCH_SIZE, num_workers=NUM_WORKERS
     @returns loader (dataloader): dataloader object for the reports
     """
     collate_fn = collate_fn_no_labels
-    dset = UnlabeledDataset(csv_path)
+    dset = UnlabeledDataset(csv_path, column)
     loader = torch.utils.data.DataLoader(dset, batch_size=batch_size, shuffle=shuffle,
                                          num_workers=num_workers, collate_fn=collate_fn)
     return loader
     
-def label(checkpoint_path, csv_path):
+def label(checkpoint_path:str,
+          csv_path:Union[str, pd.DataFrame],
+          column:str="Report Impression"):
     """Labels a dataset of reports
     @param checkpoint_path (string): location of saved model checkpoint 
-    @param csv_path (string): location of csv with reports
+    @param csv_path (string or pd.DataFrame): location of csv with reports,
+                                                or the dataframe itself.
 
     @returns y_pred (List[List[int]]): Labels for each of the 14 conditions, per report  
     """
-    ld = load_unlabeled_data(csv_path)
+    ld = load_unlabeled_data(csv_path, column=column)
     
     model = bert_labeler()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

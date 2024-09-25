@@ -1,20 +1,24 @@
+from typing import Union
 import torch
 import pandas as pd
 import numpy as np
 from transformers import BertTokenizer
-import bert_tokenizer
-from torch.utils.data import Dataset, DataLoader
+import chexbert.bert_tokenizer as bert_tokenizer
+from torch.utils.data import Dataset
 
 class UnlabeledDataset(Dataset):
         """The dataset to contain report impressions without any labels."""
         
-        def __init__(self, csv_path):
+        def __init__(self, csv_path:Union[str, pd.DataFrame],
+                     column:str="Report Impression"):
                 """ Initialize the dataset object
-                @param csv_path (string): path to the csv file containing rhe reports. It
-                                          should have a column named "Report Impression"
+                @param csv_path (string): path to the csv file containing the reports. It
+                                          should have a column named "column".
+                @param column (string): the name of the column in the csv file that contains
+                                            the report impressions.
                 """
                 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-                impressions = bert_tokenizer.get_impressions_from_csv(csv_path)
+                impressions = bert_tokenizer.get_impressions_from_csv(csv_path, column)
                 self.encoded_imp = bert_tokenizer.tokenize(impressions, tokenizer)
 
         def __len__(self):
