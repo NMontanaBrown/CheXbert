@@ -24,6 +24,7 @@ dependencies=[
     "torch",
     "tqdm",
     "transformers",
+    "statsmodels"
 ]
 
 [project.urls]
