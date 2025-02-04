@@ -49,3 +49,35 @@ class bert_labeler(nn.Module):
         for i in range(14):
             out.append(self.linear_heads[i](cls_hidden))
         return out
+
+class bert_embedder(nn.Module):
+    def __init__(self,
+                 clinical=False,
+                 freeze_embeddings=False,
+                 pretrain_path=None):
+        """ Init the embedder module
+        @param clinical (boolean): True if Bio_Clinical BERT desired, False otherwise. Ignored if
+                                   pretrain_path is not None
+        @param freeze_embeddings (boolean): true to freeze bert embeddings during training
+        @param pretrain_path (string): path to load checkpoint from
+        """
+        super(bert_embedder, self).__init__()
+
+        if pretrain_path is not None:
+            self.bert = BertModel.from_pretrained(pretrain_path)
+        elif clinical:
+            self.bert = AutoModel.from_pretrained("emilyalsentzer/Bio_ClinicalBERT")
+        else:
+            self.bert = BertModel.from_pretrained('bert-base-uncased')
+
+    def forward(self, source_padded, attention_mask):
+        """ Forward pass of the embedder
+        @param source_padded (torch.LongTensor): Tensor of word indices with padding, shape (batch_size, max_len)
+        @param attention_mask (torch.Tensor): Mask to avoid attention on padding tokens, shape (batch_size, max_len)
+        @returns out (torch.Tensor): A tensor of shape (batch_size, hidden_size), last hidden state of the CLS token.
+        """
+        #shape (batch_size, max_len, hidden_size)
+        final_hidden = self.bert(source_padded, attention_mask=attention_mask)[0]
+        #shape (batch_size, hidden_size)
+        cls_hidden = final_hidden[:, 0, :].squeeze(dim=1)
+        return cls_hidden
